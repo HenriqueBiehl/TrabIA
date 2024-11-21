@@ -1,57 +1,94 @@
 #include <stdio.h> 
 #include <stdlib.h> 
+#include "lib_set.h"
 
-int read_value();
-void set_table(int *table, int n, int m);
-void print_table(int *table, int n, int m);
+short read_value();
+void set_table(short *table, short n, short m);
+void print_table(short *table, short n, short m);
 
 
-int read_value(){
-    int v; 
+short read_value(){
+    short v; 
 
-    scanf("%d", &v); 
+    scanf("%hd", &v); 
 
     while(v != 0 && v != 1){
         printf("Valores devem ser entre 1 e 0\n");
-        scanf("%d", &v); 
+        scanf("%hd", &v); 
     }
 
     return v; 
 }
 
-void set_table(int *table, int n, int m){
-    int v; 
+void set_table(short *table, short n, short m){
+    short v; 
 
-    for(int i=0; i < n; i++){
-        for(int j=0; j < m; j++){
+    for(short i=0; i < n; i++){
+        for(short j=0; j < m; j++){
             v = read_value(); 
             table[i*m + j] = v;
         }
     }
 }
 
-void print_table(int *table, int n, int m){
+void print_table(short *table, short n, short m){
 
     printf("\n");
-    for(int i=0; i < n; i++){
-        for(int j=0; j < m; j++){
-            printf("%d ", table[i*m + j]);
+    for(short i=0; i < n; i++){
+        for(short j=0; j < m; j++){
+            printf("%hd ", table[i*m + j]);
         }
         printf("\n");
     }
     printf("\n");
 }
 
+struct set_t *neighbour_set(short index, short i, short j, short m){
+
+
+
+
+    
+}
+
+short *return_best_table(short *table, short  n, short m){
+    //short *best_result; 
+    //int cells_alive = 0;
+    short x, index;
+    
+    short *aux_table = malloc(sizeof(short)*n*m);
+
+
+    for(short i=0; i < n; i++){
+        for(short j=0; j < m; j++){
+            printf("%hd ", table[i*m + j]);
+            index = i*m + j;
+            x =  table[index] == 0;
+            // n = neighbour_set(index, i, j, n, m);
+
+            if(x == 0){
+                //Preservation && Life
+            }
+            else{
+                //Loneliness  && Stagnation && Overcrowding
+            }
+        }
+        printf("\n");
+    }
+
+}
+
+
 
 int main(){
-    int n;
-    int m; 
-    int *table; 
+    short n;
+    short m; 
+    short *table; 
 
-    scanf("%d", &n);
-    scanf("%d", &m); 
+    scanf("%hd", &n);
+    scanf("%hd", &m); 
 
-    table = malloc(sizeof(int)*n*m);
+    table = malloc(sizeof(short)*n*m);
 
     if(!table){
         puts("Falha ao alocar tabela\n");
