@@ -1,13 +1,13 @@
 
-CFLAGS=-g -Wall -std=c2x 
+CFLAGS=-g -Wall -std=c++17 
 
-OBJECTS=main.o 
+OBJECTS=lib_set.o 
 
-main: $(OBJECTS)
-	gcc $(OBJECTS) -o main $(CFLAGS)
+main:$(OBJECTS) main.cpp
+	g++ $(OBJECTS) main.cpp -o main $(CFLAGS) -lz3
 
-main.o: main.c 
-	gcc -c main.c $(CFLAGS)
+lib_set.o:lib_set.cpp  
+	g++ -c lib_set.cpp $(CFLAGS)
 
 clean: 
 	rm -f main $(OBJECTS)
