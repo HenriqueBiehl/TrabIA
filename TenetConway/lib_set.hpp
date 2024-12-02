@@ -33,6 +33,12 @@ int insert_element_set(struct set_t *s, short value);
 void remove_element_set(struct set_t *s);
 
 /*
+    Recebe o conjunto struct set_t s e strutct set_t a e cria o conjunto diferença entre os 2. 
+    Retorna um conjunto struct set_t;
+*/
+struct set_t create_set_diff(struct set_t *s, struct set_t *a);
+
+/*
     Imprime os elementos do conjunto struct set_t *s;
 */
 void print_set(struct set_t *s);

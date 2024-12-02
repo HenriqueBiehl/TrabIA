@@ -1,0 +1,91 @@
+void test_neighbour_generation(struct set_t *s, int n, int m){
+
+    generate_neighbour_set(s, 0, 0, n, m);
+    cout << "Conjunto vizinho para 0,0: " << endl; 
+    print_set(s); 
+    reset_set(s);
+
+    generate_neighbour_set(s, 0, (m-1)/2, n , m);
+    cout << "Conjunto vizinho para 0,m/2: " << endl; 
+    print_set(s); 
+    reset_set(s);
+
+    generate_neighbour_set(s, 0, (m-1), n , m);
+    cout << "Conjunto vizinho para 0,m-1: " << endl; 
+    print_set(s); 
+    reset_set(s);
+
+    generate_neighbour_set(s, (n-1)/2, 0, n , m);
+    cout << "Conjunto vizinho para n/2,0: " << endl; 
+    print_set(s); 
+    reset_set(s);
+
+    generate_neighbour_set(s, n-1, 0, n , m);
+    cout << "Conjunto vizinho para n/2,m/2: " << endl; 
+    print_set(s); 
+    reset_set(s);
+
+    generate_neighbour_set(s, (n-1)/2, (m-1)/2, n , m);
+    cout << "Conjunto vizinho para n/2,m/2: " << endl; 
+    print_set(s); 
+    reset_set(s);
+
+    generate_neighbour_set(s, n-1, (m-1)/2, n , m);
+    cout << "Conjunto vizinho para n-1 ,m/2: " << endl; 
+    print_set(s); 
+    reset_set(s);
+
+    generate_neighbour_set(s, (n-1)/2, (m-1), n , m);
+    cout << "Conjunto vizinho para n/2,m-1: " << endl; 
+    print_set(s); 
+    reset_set(s);
+
+    generate_neighbour_set(s, n-1, m-1, n , m);
+    cout << "Conjunto vizinho para n-1,m-1: " << endl; 
+    print_set(s); 
+    reset_set(s);
+}
+
+void generate_all_subsets(struct set_t *s, struct set_t *subset, short start, short c){
+
+    if(s->cardinality < c)
+        return;
+
+    if(subset->cardinality == c){
+        print_set(subset); 
+        return;
+    }
+
+    for(int i = start; i < s->cardinality; ++i){
+        insert_element_set(subset, s->elem[i]);
+        generate_all_subsets(s, subset, i+1, c); 
+        remove_element_set(subset);
+    }
+
+}
+
+void all_table_neighbours(struct set_t *s, int n, int m){
+    struct set_t *subset = create_empty_set(); 
+
+    for(int i = 0; i < n; ++i){
+        for(int j = 0; j < m; ++j){   
+            cout << "Conjunto de vizinho para [" <<  i <<"][" << j << "]" << endl;
+            generate_neighbour_set(s, i, j, n, m); 
+            print_set(s); 
+
+            cout <<"    Gerando subsets para [" <<  i <<"][" << j << "]" << endl;
+
+            for(int c=2; c <= 7; ++c){
+                cout<<"     para c: " << c << endl;
+                generate_all_subsets(s, subset, 0, c);
+            }
+            cout << endl;
+
+            reset_set(s);
+            reset_set(subset);
+        }
+    }
+
+    destroy_set(subset);
+
+}

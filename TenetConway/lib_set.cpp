@@ -45,6 +45,29 @@ void remove_element_set(struct set_t *s){
     s->cardinality--;
 }
 
+struct set_t create_set_diff(struct set_t *s, struct set_t *a){
+    struct set_t diff; 
+    bool intersec = false; 
+    diff.cardinality = 0;
+
+    for(int i = 0; i < s->cardinality; ++i){
+
+        for(int j = 0; j < a->cardinality && !intersec; ++j){
+            if(s->elem[i] == a->elem[j])
+                intersec = true; 
+        }
+
+        if(!intersec){
+            diff.elem[diff.cardinality] = s->elem[i]; 
+            diff.cardinality++;
+        }
+
+        intersec = false;
+    }
+
+    return diff;
+}
+
 void print_set(struct set_t *s){
 
     if(s->cardinality == 0)
