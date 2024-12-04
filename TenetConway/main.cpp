@@ -1,22 +1,32 @@
 #include <iostream> 
 #include <stdlib.h> 
+#include <chrono>
+#include <sys/resource.h>
+#include "z3++.h"   //SAT solver utilizado Z3
 #include "lib_set.hpp"
-#include "z3++.h"
+#include "lib_game_of_life_operations.hpp"
 
 using namespace std; 
+using namespace z3;
+using namespace std::chrono;
 
-short read_value();
-void set_table(short *table, short n, short m);
-void print_table(short *table, short n, short m);
+void print_memory_usage() {
+    struct rusage usage;
+    getrusage(RUSAGE_SELF, &usage);
+    std::cout << "Memória usada (RSS): " << usage.ru_maxrss << " KB" << std::endl;
+}
 
-
+/*
+    Operação para ler um valor 0 ou 1. 
+    Retorna o valor lido.
+*/
 short read_value(){
     short v; 
 
     cin >> v; 
 
+    //Repete a operação caso o valor lido não seja 0 ou 1
     while(v != 0 && v != 1){
-
         cout << "Valores devem ser entre 1 e 0" << endl; 
         cin >> v; 
     }
@@ -24,17 +34,23 @@ short read_value(){
     return v; 
 }
 
+/*
+    Incializa os valores da tabela table com dimensões n x m
+*/
 void set_table(short *table, short n, short m){
     short v; 
 
     for(short i=0; i < n; i++){
         for(short j=0; j < m; j++){
-            v = read_value(); 
+            v = read_value();  // Le o valor a ser adicionado na posição i*m + j
             table[i*m + j] = v;
         }
     }
 }
 
+/*
+    Imprime os valores da tabela table com dimensões n x m
+*/
 void print_table(short *table, short n, short m){
 
     cout << endl;
@@ -47,188 +63,26 @@ void print_table(short *table, short n, short m){
     cout << endl;
 }
 
-z3::expr set_disjunction(z3::context& c,  struct set_t *s){
-    z3::expr_vector var(c); 
-
-    for(int i =0; i < s->cardinality; ++i){
-        var.push_back(c.bool_const(("x_" + to_string(s->elem[i])).c_str()));
-    }
-    
-    return z3::mk_or(var);
-}
-
-z3::expr set_disjunction_not_elem(z3::context& c,  struct set_t *s){
-    z3::expr_vector var(c); 
-
-    for(int i =0; i < s->cardinality; ++i){
-        var.push_back(!c.bool_const(("x_" + to_string(s->elem[i])).c_str()));
-    }
-
-    return z3::mk_or(var);
-}
-
-void Loneliness(struct set_t *s, struct set_t *subset, short start, short card, z3::solver& f, z3::context& c){
-
-    if(s->cardinality < card)
-        return;
-
-    if(subset->cardinality == card){
-        f.add(set_disjunction(c, subset));
-        return;
-    }
-
-    for(int i = start; i < s->cardinality; ++i){
-        insert_element_set(subset, s->elem[i]);
-        Loneliness(s, subset, i+1, card, f, c); 
-        remove_element_set(subset);
-    }
-}
-
-void Overcrowding(struct set_t *s, struct set_t *subset, short start, short card, z3::solver& f, z3::context& c){
-    
-    if(s->cardinality < card)
-        return;
-
-    if(subset->cardinality == card){
-        f.add(set_disjunction_not_elem(c, subset));
-        return;
-    }
-
-    for(int i = start; i < s->cardinality; ++i){
-        insert_element_set(subset, s->elem[i]);
-        Overcrowding(s, subset, i+1, card, f, c); 
-        remove_element_set(subset);
-    }
-}
-
-void Stagnation(short cell, struct set_t *s, struct set_t *subset, short start, short card, z3::solver& f, z3::context& c){
-    
-    if(s->cardinality < card)
-        return;
-
-    if(subset->cardinality == card){
-        struct set_t diff = create_set_diff(s, subset);
-
-        z3::expr x = c.bool_const(("x_" + to_string(cell)).c_str());
-        x = x || set_disjunction(c, &diff);
-        x = x || set_disjunction_not_elem(c, subset);
-        f.add(x);
-        return;
-    }
-
-    for(int i = start; i < s->cardinality; ++i){
-        insert_element_set(subset, s->elem[i]);
-        Stagnation(cell, s, subset, i+1, card, f, c); 
-        remove_element_set(subset);
-    }
-}
-
-void Preservation(short cell, struct set_t *s, struct set_t *subset, short start, short card, z3::solver& f, z3::context& c){
-    
-    if(s->cardinality < card)
-        return;
-
-    if(subset->cardinality == card){
-        struct set_t diff = create_set_diff(s, subset); 
-
-        z3::expr x = !c.bool_const(("x_" + to_string(cell)).c_str());
-        x = x || set_disjunction(c, &diff);
-        x = x || set_disjunction_not_elem(c, subset);
-        f.add(x);
-        return;
-    }
-
-    for(int i = start; i < s->cardinality; ++i){
-        insert_element_set(subset, s->elem[i]);
-        Preservation(cell, s, subset, i+1, card, f, c); 
-        remove_element_set(subset);
-    }
-}
-
-void Life(struct set_t *s, struct set_t *subset, short start, short card, z3::solver& f, z3::context& c){
-    
-    if(s->cardinality < card)
-        return;
-
-    if(subset->cardinality == card){
-        struct set_t diff = create_set_diff(s, subset); 
-
-        z3::expr x = set_disjunction(c, &diff) || set_disjunction_not_elem(c, subset);
-        f.add(x);
-        return;
-    }
-
-    for(int i = start; i < s->cardinality; ++i){
-        insert_element_set(subset, s->elem[i]);
-        Life(s, subset, i+1, card, f, c); 
-        remove_element_set(subset);
-    }
-}
-void generate_neighbour_set(struct set_t *s, short i, short j, int n, int m){
-
-    if((i-1) >= 0){
-
-        if((j-1) >= 0)
-            insert_element_set(s, (i-1)*m + j-1);
-
-        insert_element_set(s, (i-1)*m + j);
-
-        if((j+1) < m)
-            insert_element_set(s, (i-1)*m + j+1);
-
-    }
-
-    if((j-1) >= 0)
-        insert_element_set(s, i*m + j-1);
-
-
-    if((j + 1) < m)
-        insert_element_set(s, i*m + j+1);
-
-    if((i+1) < n){
-        if((j-1) >= 0)
-            insert_element_set(s, (i+1)*m + j-1);
-
-        insert_element_set(s, (i+1)*m + j);
-
-        if((j+1) < m)
-            insert_element_set(s, (i+1)*m + j+1);
-    }
-
-}
-
-void create_formula(short *table, struct set_t *s, int n, int m, z3::solver& f, z3::context& c){
-    struct set_t *subset = create_empty_set(); 
-
-    for(int i = 0; i < n; ++i){
-        for(int j = 0; j < m; ++j){   
-            generate_neighbour_set(s, i, j, n, m); 
-
-            if(table[i*m + j]){
-                Loneliness(s, subset, 0, 7, f, c);
-                Overcrowding(s, subset, 0, 4, f, c);
-                Stagnation(i*m+j, s, subset, 0, 2, f,c);
-
-            }
-            else {
-                Preservation(i*m+j, s, subset, 0, 2, f,c);
-                Life(s, subset, 0, 3, f, c);
-            }
-            reset_set(s);
-            reset_set(subset);
-        }
-    }
-
-    destroy_set(subset);
-}
-
-
-int main(){
+int main(int argc, char **argv){
     short n;
     short m; 
     short *table; 
-    z3::context c;
+    unsigned int time; 
 
+    if(argc == 2)
+        time = atoi(argv[1]); //Opção de inserir um tempo máximo em segundos para testes personalizados
+    else
+        time = 300; //Tempo maximo padrão é 300 segundos (5 minutos)
+
+    z3::config config; 
+    z3::context c(config);
+
+    auto start_time = steady_clock::now();
+
+    // Tempo de execução máximo (5 minutos)
+    auto max_duration = seconds(time);
+    
+    cout << "Max execution time: " << max_duration.count() << " segundos" << endl;
     struct set_t *s = create_empty_set(); 
 
     cin >> n; 
@@ -236,6 +90,8 @@ int main(){
 
     std::vector <z3::expr>  variables; 
 
+    //Incializa as variaveis da formula SAT. Valores vão de 0 a n*m, 
+    //onde cada uma representa uma célula do tabuleiro
     for (int i = 0; i < n*m ; ++i){
         string var_name = "x_" + to_string(i); 
         variables.push_back(c.bool_const(var_name.c_str()));
@@ -251,31 +107,90 @@ int main(){
     set_table(table, n, m);
     print_table(table, n, m);
 
-    z3::solver f(c);
+    int min_true_vars = variables.size();
+    expr_vector not_more_than(c);
 
+    z3::solver f(c);
 
     create_formula(table, s, n, m, f, c);
 
-    if (f.check() == z3::sat) {
-        std::cout << "Satisfatível: " << std::endl;
+    params p(c);
+    //Adiciona timeout para resolução do problema (para ficar dentro da faixa de tempo de max duration)
+    p.set("timeout",static_cast<unsigned>(duration_cast<milliseconds>(max_duration).count()));
+    f.set(p);
+    int true_vars; 
+    int iterations = 0;
 
-         z3::model model = f.get_model();
+    while(f.check() == z3::sat){ 
+        iterations++;
+        z3::model model = f.get_model(); 
+        auto current_time = steady_clock::now();
+        auto elapsed = duration_cast<seconds>(current_time - start_time); // Calcular o tempo decorrido em segundos
 
-        cout << endl;
+        // Atualizar o tempo restante
+        auto time_remaining = max_duration - elapsed;
+
+        if (time_remaining <= seconds(0)) {
+            std::cout << "Tempo limite total atingido.\n";
+            break;
+        }
+
+        true_vars = 0; 
+        for(const auto& var: variables){
+            if(model.eval(var).is_true()) 
+                true_vars++;
+        }
+
+        min_true_vars = true_vars;
+
+        //Adiciona os resultados das váriveis x_i*m+j no tabuleiro como 0 ou 1
         for(short i=0; i < n; i++){
             for(short j=0; j < m; j++){
                 z3::expr value = model.eval(variables[i*m +j]);
-                std::cout << (value.bool_value() == Z3_L_TRUE ? "1" : "0") << " ";        }
-            cout << endl;
+                table[i*m +j] = value.bool_value() == Z3_L_TRUE ? 1 : 0;        
+            }
         }
-        cout << endl;
 
-    } else {
-        std::cout << "Insatisfatível." << std::endl;
+        //Expressão inteira inicializada como valor 0 
+        expr true_var_sum = c.int_val(0); 
+        for(const auto& var: variables){
+            //Soma as váriaveis verdadeiras em var. Usa do ite para converter para 1 váriveis verdadeiras e 0 para falsas.
+            true_var_sum = true_var_sum + ite(var, c.int_val(1), c.int_val(0));
+        }
+        //Adiciona a restrição de true_var_sum ser menor que min_true_vars -1 para a proxima iteração
+        not_more_than.push_back(true_var_sum <= c.int_val(min_true_vars - 1));
+
+        //Adiciona expressão ao solver f
+        f.add(mk_and(not_more_than));
+
+        //Timeout é modificado para o tempo restante (max_duration do inicio menos o tempo gastado (elapsed))
+        p.set("timeout",static_cast<unsigned>(duration_cast<milliseconds>(time_remaining).count()));
+        f.set(p);
     }
+    auto end = steady_clock::now();
+    auto duration = end - start_time;
+
+    print_memory_usage();
+    cout.precision(3);
+    cout << "Duração total: " << duration_cast<milliseconds>(duration).count()/1e3 << " segundos " << endl;
+
+    //Calula quantas váriaveis verdadeiras há no tabuleiro
+    true_vars = 0; 
+    for(short i=0; i < n; i++){
+        for(short j=0; j < m; j++){
+            if(table[i*m +j])
+                true_vars++;     
+        }
+    }
+    
+    cout << endl << "Melhor Solução Encontrada com " << true_vars << " células vivas em " << iterations << " iterações:" <<endl;
+    
+    print_table(table, n, m);
 
     free(table);
     destroy_set(s);
 
+    variables.clear();
+    f.reset();    
     return 0;
 }

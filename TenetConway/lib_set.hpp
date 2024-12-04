@@ -1,8 +1,10 @@
 #include <iostream>
 #include <stdlib.h>
 
-#define MAX_ELEMENTS 8      //Como a lib_set.hpp será usada para definir conjuntos vizinhos, o máximo de 
-                            //vizinhos que uma célula pode ter No conway's game of life é 8
+#pragma once
+
+#define MAX_ELEMENTS 8      //Como a lib_set.hpp será usada para definir conjuntos vizinhos, 
+                            //o máximo de vizinhos que uma célula pode ter No conway's game of life é 8
 
 struct set_t{
     short cardinality;          //Cardinalidade do conjunto  
